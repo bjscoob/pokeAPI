@@ -1,0 +1,107 @@
+<?php 
+//prepare error message, header response, payload variables
+$errorMsg = "";
+ $payLoad = "";
+ $hdrResponse = "";
+ 
+//first check passcode before doing requests
+if ($_POST["Passcode"] == "roman"){
+    
+    //store request from Form
+    $request = 'https://pokeapi.co/api/v2/pokemon/'.$_POST["PokeName"];
+    
+    //store JSON payload
+    $payLoad = file_get_contents($request);
+    
+    //get status code for the pokeAPI response
+    $statusCode = $http_response_header[0]; // Output: HTTP/2 200 OK
+    
+    //case when 200 status = good
+    if (strpos($statusCode, '200')) { 
+   $hdrResponse  =" Success! Pokemon Data Found.";
+    }
+    
+    //case when 404 status = not found
+    elseif (strpos($statusCode, '404')) { 
+    $hdrResponse  =" Failure. Pokemon name invalid.";
+    }
+    
+    //else  cannot connect to pokeAPI
+    else{
+    $hdrResponse  =" Failure. PokeAPI could not be reached.";
+        
+    }
+    
+    //load request, status, and payload to database
+    //create database connection
+    $con = mysqli_connect("localhost",#######,#######,#########);
+        if($con){
+            $sql = "INSERT INTO PokeAPI_Log (Request, Status, Response) VALUES ('".$request."','".$statusCode."','".$payLoad."')";
+              if(!$result = $con->query($sql)){
+                  
+              //if error with SQL transaction, print sql here
+              $errorMsg = "Unable to log data.";
+                }
+                else{
+                    echo $hdrResponse ;
+                }
+        }
+        else{ $errorMsg = "Unable to connect to database.";}
+}
+
+//if passcode is wrong, send an error message
+else{
+    
+    $errorMsg ="Sorry! Wrong Passcode." ;
+  
+    
+}
+
+
+
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokeAPI</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+      <h1>PokeAPI</h1>
+      <h2>by Brandon Jackson</h2>
+      
+      <form  method="POST" autocomplete="false | unknown-autocomplete-value">
+          <label> Pokemon Name:</label><br/>
+          <input name="PokeName" autocomplete="off" type = "text"/>
+          <br/>
+          <br/>
+          <label> Passcode:</label><br/>
+          <input name = "Passcode" autocomplete="off" type="password"/>
+          <br/><br/>
+         
+          <input type="submit" value = "Submit"/>
+          
+      </form>
+       <br/>
+       <br/> 
+       <br/>
+       <br/>
+      <h2>Pokemon Data</h2>
+      <p style="width:90%; border: 1px solid blue;border-radius:12px;">
+          <?php  echo $payLoad;  ?>
+      </p>
+	<?php
+	//alert box whenever there is an API failure
+	if((isset($_POST["Passcode"]) || isset($_POST["PokeName"])) && $errorMsg <> "" ){
+      echo '<script language="javascript">';
+echo 'alert("'.$errorMsg.'");';
+echo '</script>';
+}
+	?>
+  </body>
+</html>
+
